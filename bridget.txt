@@ -1,6 +1,3 @@
-#0 | fin
-#1 | empanadas
-#2 | carne
-#3 | picante
-#4 | neeh
-#5 | alpargata
+#0 | joja
+#1 | nao
+#2 | new

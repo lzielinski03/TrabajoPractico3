@@ -1,5 +1,7 @@
 package controller;
 
+import customException.DeleteDiaryException;
+import customException.InsertDiaryException;
 import model.BridgetDB;
 import view.IOMenu;
 
@@ -18,10 +20,18 @@ public class MenuController {
 
             switch(optionMenu) {
                 case ADD:
-                    db.insert(optionMenu.getArgs().get(0));
+                    try {
+                        db.insert(optionMenu.getArgs().get(0));
+                    } catch (InsertDiaryException e) {
+                        IOMenu.printException(e);
+                    }
                     break;
                 case DELETE:
-                    db.delete(optionMenu.getArgs().get(0));
+                    try {
+                        db.delete(optionMenu.getArgs().get(0));
+                    } catch (DeleteDiaryException e) {
+                        IOMenu.printException(e);
+                    }
                     break;
                 case ENTRIES:
                     iom.printDiary(db.getDiaryLine());

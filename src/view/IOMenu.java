@@ -95,5 +95,4 @@ public class IOMenu extends IOManager {
         }
         println();
     }
-
 }

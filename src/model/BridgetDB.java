@@ -1,5 +1,6 @@
 package model;
 
+import customException.*;
 import view.IOMenu;
 
 import java.io.*;
@@ -22,9 +23,13 @@ public class BridgetDB {
     private List<BridgetLine> diary;
 
     private BridgetDB() {
-        diary = new ArrayList<BridgetLine>();
+        diary = new ArrayList<>();
         path = "bridget.txt";
-        loadDiary();
+        try {
+            loadDiary();
+        } catch (LoadDiaryException e) {
+            IOMenu.printException(e);
+        }
     }
 
     public static BridgetDB getInstance() {
@@ -33,108 +38,130 @@ public class BridgetDB {
         return instance;
     }
 
-    private void openConnection() {
-        if (bridget == null) {
-            bridget = new File(path);
-        }
-        if (!bridget.exists() && !bridget.isDirectory()) {
-            try {
-                bridget.createNewFile();
-            } catch (IOException e) {
-                IOMenu.printException(e);
-            }
-        }
+    private void openConnection() throws OpenConnectionException{
         try {
+            if (bridget == null)
+                bridget = new File(path);
+
+            if (!bridget.exists() && !bridget.isDirectory())
+                bridget.createNewFile();
+
+            // use to get exceptions.
+            //bridget = null;
+
             br = new BufferedReader(new FileReader(bridget.getAbsoluteFile()));
             bw = new BufferedWriter(new FileWriter(bridget.getAbsoluteFile(), true));
-        } catch (IOException e) {
-            IOMenu.printException(e);
+
+        } catch (IOException | NullPointerException e) {
+            throw new OpenConnectionException();
         }
     }
 
-    private void closeConnection() {
+    private void closeConnection() throws CloseDiaryException{
+        if (br == null || bw == null)
+            throw new CloseDiaryException();
+
         try {
             br.close();
             bw.close();
         } catch (IOException e) {
-            IOMenu.printException(e);
+            throw new CloseDiaryException();
         }
     }
 
-    public void persistDiary() throws IOException{
-        openConnection();
-
-        File tmp = File.createTempFile("tmp", "");
-        BufferedWriter tmpBw = new BufferedWriter(new FileWriter(tmp.getAbsoluteFile()));
-
-        int i = 0;
-        for (BridgetLine l : diary) {
-            tmpBw.write(new BridgetLine(i++, l.line).getFormatedLine());
-            tmpBw.newLine();
-        }
-
-        tmpBw.flush();
-        tmpBw.close();
-        closeConnection();
-
-        if (bridget.delete()) {
-            tmp.renameTo(bridget);
-        }
-        loadDiary();
-    }
-
-    private void loadDiary() {
-        openConnection();
+    public void persistDiary() throws PersistDiaryException{
         try {
+            openConnection();
+            File tmp = File.createTempFile("tmp", "");
+            BufferedWriter tmpBw = new BufferedWriter(new FileWriter(tmp.getAbsoluteFile()));
+
+            int i = 0;
+            for (BridgetLine l : diary) {
+                tmpBw.write(new BridgetLine(i++, l.line).getFormatedLine());
+                tmpBw.newLine();
+            }
+
+            tmpBw.flush();
+            tmpBw.close();
+            closeConnection();
+
+            if (bridget.delete())
+                tmp.renameTo(bridget);
+
+            loadDiary();
+        } catch (OpenConnectionException | IOException | CloseDiaryException | LoadDiaryException e) {
+            throw new PersistDiaryException();
+        }
+    }
+
+    private void loadDiary() throws LoadDiaryException{
+        try {
+            openConnection();
+
             String line = br.readLine();
             diary.clear();
             while (line != null) {
                 diary.add(new BridgetLine(line));
                 line = br.readLine();
             }
-        } catch (IOException e) {
-            IOMenu.printException(e);
+        } catch (OpenConnectionException | IOException e) {
+            throw new LoadDiaryException();
         } finally {
-            closeConnection();
+            try {
+                closeConnection();
+            } catch (CloseDiaryException e) {
+                IOMenu.printException(e);
+            }
         }
     }
 
-    // throw bridgetInsertException
-    public boolean insert(String data) {
-        openConnection();
+    public boolean insert(String data) throws InsertDiaryException{
         try {
+            openConnection();
+
             bw.write(new BridgetLine(diary.size(), data).getFormatedLine());
             bw.newLine();
             bw.flush();
-        } catch (IOException e) {
-            IOMenu.printException(e);
-            return false;
+        } catch (OpenConnectionException | IOException e) {
+            throw new InsertDiaryException();
         } finally {
-            closeConnection();
+            try {
+                closeConnection();
+                loadDiary();
+            } catch (CloseDiaryException | LoadDiaryException e) {
+                IOMenu.printException(e);
+            }
         }
-        loadDiary();
         return true;
     }
 
-    // throw bridgetDeleteException
-    public boolean delete(String id) {
-        int idItem = Integer.parseInt(id);
+    public boolean delete(String id) throws DeleteDiaryException{
+        if (id.trim().isEmpty())
+            throw new DeleteDiaryException();
 
-        if(idItem > diary.size()) {
-            return false;
-        }
-        diary.remove(idItem);
         try {
-            persistDiary();
-        } catch (IOException e) {
-            IOMenu.printException(e);
-        }
+            int idItem = Integer.parseInt(id);
 
+            if (idItem > diary.size())
+                throw new DeleteDiaryException();
+
+            diary.remove(idItem);
+            persistDiary();
+
+        } catch (NumberFormatException | IndexOutOfBoundsException | PersistDiaryException e) {
+            throw new DeleteDiaryException();
+        }
         return true;
     }
 
     public List<String> getDiaryLine() {
-        List<String> lines = new ArrayList<String>();
+        try {
+            loadDiary();
+        } catch (LoadDiaryException e) {
+            IOMenu.printException(e);
+        }
+
+        List<String> lines = new ArrayList<>();
         for (BridgetLine x : diary) {
             lines.add(x.getFormatedLine());
         }
@@ -146,13 +173,11 @@ public class BridgetDB {
         private int id;
         private String line;
 
-        // throw BridgetLineException (id < 0)
         public BridgetLine(int id, String line) {
             this.id = id;
             this.line = line;
         }
 
-        // test violate
         public BridgetLine(String line) {
             this.id = Integer.parseInt(line.substring(1, line.indexOf(" ")));
             this.line = line.substring(line.indexOf("|") + 2, line.length());

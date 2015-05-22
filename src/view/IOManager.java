@@ -7,21 +7,6 @@ import java.util.Scanner;
  */
 public class IOManager {
 
-    /* Deprecated
-    protected void print(String message) {
-        System.out.print(message);
-    }*/
-
-    /* Deprecated
-    protected void print(int number) {
-        System.out.print(number);
-    }*/
-
-    /* Deprecated
-    protected void println(Object obj) {
-        System.out.print(obj);
-    }*/
-
     protected void println() {
         System.out.println();
     }
@@ -30,11 +15,6 @@ public class IOManager {
         System.out.println(message);
     }
 
-    /* Deprecated
-    protected void println(int message) {
-        System.out.println(message);
-    }*/
-
     public static void printException(Exception e) {
         System.out.println(e.getMessage());
     }
@@ -42,10 +22,6 @@ public class IOManager {
     protected String getString(String message) {
         Scanner scanner = new Scanner(System.in);
         println(message);
-        String input = scanner.nextLine();
-        scanner.close();
-        return input;
+        return scanner.nextLine();
     }
-
-
 }

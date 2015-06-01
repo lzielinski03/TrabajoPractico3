@@ -75,7 +75,7 @@ public class BridgetDB {
             File tmp = File.createTempFile("tmp", "");
             BufferedWriter tmpBw = new BufferedWriter(new FileWriter(tmp.getAbsoluteFile()));
 
-            int i = 0;
+            int i = 1;
             for (BridgetLine l : diary) {
                 tmpBw.write(new BridgetLine(i++, l.line).getFormatedLine());
                 tmpBw.newLine();
@@ -119,7 +119,7 @@ public class BridgetDB {
         try {
             openConnection();
 
-            bw.write(new BridgetLine(diary.size(), data).getFormatedLine());
+            bw.write(new BridgetLine(diary.size() + 1, data).getFormatedLine());
             bw.newLine();
             bw.flush();
         } catch (OpenConnectionException | IOException e) {
@@ -136,7 +136,7 @@ public class BridgetDB {
     }
 
     public boolean delete(String id) throws DeleteDiaryException{
-        if (id.trim().isEmpty())
+        if (id.trim().isEmpty() || Integer.parseInt(id) == 0)
             throw new DeleteDiaryException();
 
         try {
@@ -145,7 +145,7 @@ public class BridgetDB {
             if (idItem > diary.size())
                 throw new DeleteDiaryException();
 
-            diary.remove(idItem);
+            diary.remove(idItem - 1);
             persistDiary();
 
         } catch (NumberFormatException | IndexOutOfBoundsException | PersistDiaryException e) {
